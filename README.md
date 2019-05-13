@@ -1,4 +1,4 @@
-# UnityDoorstop for Linux
+# UnityDoorstop for Linux and macOS
 
 This is a quick and dirty [UnityDoorstop](https://github.com/NeighTools/UnityDoorstop) equivalent for Linux and macOS.
 
