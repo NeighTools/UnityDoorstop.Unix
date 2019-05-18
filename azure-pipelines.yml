@@ -34,7 +34,7 @@ jobs:
       displayName: 'Package files'
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)/doorstop_macos_$(Build.BuildId).zip'
+        PathtoPublish: 'doorstop_macos_$(Build.BuildId).zip'
         ArtifactName: 'doorstop_macos'
         publishLocation: 'Container'
 
