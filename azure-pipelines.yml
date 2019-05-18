@@ -1,0 +1,42 @@
+trigger:
+- master
+
+jobs:
+  - job: LinuxBuild
+    displayName: 'Build Linux'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - script: |
+        sudo apt-get -y install gcc-multilib
+      displayName: 'getting deps'
+    - script: |
+        make
+      displayName: 'make'
+    - script: |
+        zip -r $(Build.SourcesDirectory)/doorstop_linux_$(Build.BuildId).zip *.so
+      displayName: 'Package files'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/doorstop_linux_$(Build.BuildId).zip'
+        ArtifactName: 'doorstop_linux'
+        publishLocation: 'Container'
+  - job: MacOSBuild
+    displayName: 'Build MacOS'
+    pool:
+      vmImage: 'macOS-10.13'
+    steps:
+    - script: |
+        make
+      displayName: 'make'
+    - script: |
+        zip -r $(Build.SourcesDirectory)/doorstop_macos_$(Build.BuildId).zip *.dylib
+      displayName: 'Package files'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/doorstop_macos_$(Build.BuildId).zip'
+        ArtifactName: 'doorstop_macos'
+        publishLocation: 'Container'
+
+
+
