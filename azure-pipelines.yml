@@ -14,11 +14,11 @@ jobs:
         make
       displayName: 'make'
     - script: |
-        zip -r doorstop_linux_$(Build.BuildId).zip -i *.so
+        zip -r $(Build.SourcesDirectory)/doorstop_linux_$(Build.BuildId).zip -i *.so
       displayName: 'Package files'
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: 'doorstop_linux_$(Build.BuildId).zip'
+        PathtoPublish: '$(Build.SourcesDirectory)/doorstop_linux_$(Build.BuildId).zip'
         ArtifactName: 'doorstop_linux'
         publishLocation: 'Container'
   - job: MacOSBuild
@@ -30,11 +30,11 @@ jobs:
         make
       displayName: 'make'
     - script: |
-        zip -r doorstop_macos_$(Build.BuildId).zip -i *.dylib
+        zip -r $(Build.SourcesDirectory)/doorstop_macos_$(Build.BuildId).zip -i *.dylib
       displayName: 'Package files'
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: 'doorstop_macos_$(Build.BuildId).zip'
+        PathtoPublish: '$(Build.SourcesDirectory)/doorstop_macos_$(Build.BuildId).zip'
         ArtifactName: 'doorstop_macos'
         publishLocation: 'Container'
 
