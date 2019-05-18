@@ -14,7 +14,7 @@ jobs:
         make
       displayName: 'make'
     - script: |
-        zip -r $(Build.SourcesDirectory)/doorstop_linux_$(Build.BuildId).zip -i $(Build.SourcesDirectory)/*.so
+        zip -r $(Build.SourcesDirectory)/doorstop_linux_$(Build.BuildId).zip *.so
       displayName: 'Package files'
     - task: PublishBuildArtifacts@1
       inputs:
@@ -30,7 +30,7 @@ jobs:
         make
       displayName: 'make'
     - script: |
-        zip -r $(Build.SourcesDirectory)/doorstop_macos_$(Build.BuildId).zip -i $(Build.SourcesDirectory)/*.dylib
+        zip -r $(Build.SourcesDirectory)/doorstop_macos_$(Build.BuildId).zip *.dylib
       displayName: 'Package files'
     - task: PublishBuildArtifacts@1
       inputs:
