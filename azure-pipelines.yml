@@ -15,7 +15,7 @@ jobs:
       displayName: 'make'
     - task: ArchiveFiles@2
       inputs:
-        rootFolderOrFile: '*.so'
+        rootFolderOrFile: '-i $(Build.BinariesDirectory)/*.so'
         includeRootFolder: true
         archiveType: 'zip'
         archiveFile: '$(Build.ArtifactStagingDirectory)/doorstop_linux_$(Build.BuildId).zip'
@@ -35,7 +35,7 @@ jobs:
       displayName: 'make'
     - task: ArchiveFiles@2
       inputs:
-        rootFolderOrFile: '*.dylib'
+        rootFolderOrFile: '-i $(Build.BinariesDirectory)/*.dylib'
         includeRootFolder: true
         archiveType: 'zip'
         archiveFile: '$(Build.ArtifactStagingDirectory)/doorstop_macos_$(Build.BuildId).zip'
