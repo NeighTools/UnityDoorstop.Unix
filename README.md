@@ -1,5 +1,7 @@
 # UnityDoorstop for Linux and macOS
 
+[![Build Status](https://dev.azure.com/ghorsington/UnityDoorstop/_apis/build/status/NeighTools.UnityDoorstop.Unix?branchName=master)](https://dev.azure.com/ghorsington/UnityDoorstop/_build/latest?definitionId=2&branchName=master)
+
 This is a quick and dirty [UnityDoorstop](https://github.com/NeighTools/UnityDoorstop) equivalent for Linux and macOS.
 
 ## How to build
@@ -15,6 +17,8 @@ macOS:
 ```sh
 gcc -shared -fPIC -o doorstop.dylib doorstop.c
 ```
+
+Or run `make` to generate both x86 and x64 builds.
 
 ## How to use
 
