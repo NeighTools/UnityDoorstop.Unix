@@ -6,5 +6,8 @@ pool:
 
 steps:
 - script: |
+    sudo apt-get -y install gcc-multilib
+  displayName: 'getting deps'
+- script: |
     make
   displayName: 'make'
