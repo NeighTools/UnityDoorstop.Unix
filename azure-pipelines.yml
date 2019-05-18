@@ -13,6 +13,18 @@ jobs:
     - script: |
         make
       displayName: 'make'
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: '$(Build.BinariesDirectory)/*.so'
+        includeRootFolder: true
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/doorstop_linux_$(Build.BuildId).zip'
+        replaceExistingArchive: true
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)/doorstop_linux_$(Build.BuildId).zip'
+        ArtifactName: 'doorstop_linux'
+        publishLocation: 'Container'
   - job: MacOSBuild
     displayName: 'Build MacOS'
     pool:
@@ -21,6 +33,18 @@ jobs:
     - script: |
         make
       displayName: 'make'
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: '$(Build.BinariesDirectory)/*.dylib'
+        includeRootFolder: true
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/doorstop_macos_$(Build.BuildId).zip'
+        replaceExistingArchive: true
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)/doorstop_macos_$(Build.BuildId).zip'
+        ArtifactName: 'doorstop_macos'
+        publishLocation: 'Container'
 
 
 
