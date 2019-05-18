@@ -16,7 +16,7 @@ jobs:
   - job: MacOSBuild
     displayName: 'Build MacOS'
     pool:
-      vmImage: 'macOS-latest'
+      vmImage: 'macOS-10.13'
     steps:
     - script: |
         make
