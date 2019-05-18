@@ -1,13 +1,26 @@
 trigger:
 - master
 
-pool:
-  vmImage: 'ubuntu-latest'
+jobs:
+  - job: LinuxBuild
+    displayName: 'Build Linux'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - script: |
+        sudo apt-get -y install gcc-multilib
+      displayName: 'getting deps'
+    - script: |
+        make
+      displayName: 'make'
+  - job: MacOSBuild
+    displayName: 'Build MacOS'
+    pool:
+      vmImage: 'macOS-latest'
+    steps:
+    - script: |
+        make
+      displayName: 'make'
 
-steps:
-- script: |
-    sudo apt-get -y install gcc-multilib
-  displayName: 'getting deps'
-- script: |
-    make
-  displayName: 'make'
+
+
