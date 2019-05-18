@@ -13,16 +13,12 @@ jobs:
     - script: |
         make
       displayName: 'make'
-    - task: ArchiveFiles@2
-      inputs:
-        rootFolderOrFile: '-i $(Build.BinariesDirectory)/*.so'
-        includeRootFolder: true
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/doorstop_linux_$(Build.BuildId).zip'
-        replaceExistingArchive: true
+    - script: |
+        zip -r doorstop_linux_$(Build.BuildId).zip -i *.so
+      displayName: 'Package files'
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)/doorstop_linux_$(Build.BuildId).zip'
+        PathtoPublish: 'doorstop_linux_$(Build.BuildId).zip'
         ArtifactName: 'doorstop_linux'
         publishLocation: 'Container'
   - job: MacOSBuild
@@ -33,13 +29,9 @@ jobs:
     - script: |
         make
       displayName: 'make'
-    - task: ArchiveFiles@2
-      inputs:
-        rootFolderOrFile: '-i $(Build.BinariesDirectory)/*.dylib'
-        includeRootFolder: true
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/doorstop_macos_$(Build.BuildId).zip'
-        replaceExistingArchive: true
+    - script: |
+        zip -r doorstop_macos_$(Build.BuildId).zip -i *.dylib
+      displayName: 'Package files'
     - task: PublishBuildArtifacts@1
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)/doorstop_macos_$(Build.BuildId).zip'
