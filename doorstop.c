@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <libgen.h>
 
 #define TRUE 1
 #define FALSE 0
@@ -24,7 +25,7 @@ extern void *_dl_sym(void *, const char *, void *);
 #define dlsym_proxy dlsym
 #define program_path(app_path) realpath(program_invocation_name, app_path)
 #define DYLD_INTERPOSE(_replacment, _replacee)
-#define INIT_DLSYM                                           \ 
+#define INIT_DLSYM                                           \
 {                                                            \
 		if (real_dlsym == NULL)                              \
 			real_dlsym = _dl_sym(RTLD_NEXT, "dlsym", dlsym); \
@@ -77,6 +78,12 @@ char *(*r_mono_array_addr_with_size)(void *arr, int size, uintptr_t idx);
 void *(*r_mono_get_string_class)();
 void *(*r_mono_string_new)(void *domain, const char *text);
 
+void *(*r_mono_thread_current)();
+void (*r_mono_thread_set_main)(void *thread);
+void (*r_mono_domain_set_config)(void *domain, char *base_dir, char *config_file_name);
+char *(*r_mono_assembly_getrootdir)();
+
+
 void doorstop_init_mono_functions(void *handle)
 {
 #define LOAD_METHOD(m) r_##m = real_dlsym(handle, #m)
@@ -94,6 +101,10 @@ void doorstop_init_mono_functions(void *handle)
 	LOAD_METHOD(mono_array_addr_with_size);
 	LOAD_METHOD(mono_get_string_class);
 	LOAD_METHOD(mono_string_new);
+	LOAD_METHOD(mono_thread_current);
+	LOAD_METHOD(mono_thread_set_main);
+	LOAD_METHOD(mono_domain_set_config);
+	LOAD_METHOD(mono_assembly_getrootdir);
 
 #undef LOAD_METHOD
 }
@@ -105,11 +116,36 @@ void *jit_init_hook(const char *root_domain_name, const char *runtime_version)
 
 	if (strcmp(getenv("DOORSTOP_ENABLE"), "TRUE"))
 	{
-		printf("[Doorstop] DOORSTO_ENABLE is not TRUE! Disabling Doorstop...");
+		printf("[Doorstop] DOORSTO_ENABLE is not TRUE! Disabling Doorstop...\n");
 		return domain;
+	}
+	if (getenv("DOORSTOP_INITIALIZED"))
+	{
+		printf("DOORSTOP_INITIALIZED is set! Skipping!\n");
+		return domain;
+	}
+	setenv("DOORSTOP_INITIALIZED", "TRUE", TRUE);
+
+	if (r_mono_domain_set_config) 
+	{
+		char app_path[PATH_MAX] = "\0";
+		char config_path[PATH_MAX] = "\0";
+		program_path(app_path);
+		strcpy(config_path, app_path);
+
+		strcat(config_path, ".config");
+		char *folder_path = dirname(app_path);
+
+		printf("Setting config paths; basedir: %s; config: %s\n", folder_path, config_path);
+		r_mono_domain_set_config(domain, folder_path, config_path);
 	}
 
 	char *dll_path = getenv("DOORSTOP_INVOKE_DLL_PATH");
+
+	char *assembly_dir = r_mono_assembly_getrootdir();
+	printf("Managed dir: %s\n", assembly_dir);
+	setenv("DOORSTOP_MANAGED_FOLDER_DIR", assembly_dir, TRUE);
+	free(assembly_dir);
 
 	// Load our custom assembly into the domain
 	void *assembly = r_mono_domain_assembly_open(domain, dll_path);
