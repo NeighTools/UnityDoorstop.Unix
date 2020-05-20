@@ -21,14 +21,14 @@ jobs:
         PathtoPublish: '$(Build.SourcesDirectory)/doorstop_linux_$(Build.BuildId).zip'
         ArtifactName: 'doorstop_linux'
         publishLocation: 'Container'
-  - job: MacOSBuild
+  - job: MacOSBuild # x86 is not allowed on 10.14+ anymore
     displayName: 'Build MacOS'
     pool:
       vmImage: 'macOS-10.14'
     steps:
     - script: |
-        make
-      displayName: 'make build_x64' # x86 is not allowed on 10.14+ anymore
+        make build_x64
+      displayName: 'make'
     - script: |
         zip -r $(Build.SourcesDirectory)/doorstop_macos_$(Build.BuildId).zip *.dylib
       displayName: 'Package files'
