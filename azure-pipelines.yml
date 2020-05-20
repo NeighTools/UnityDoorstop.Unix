@@ -30,7 +30,7 @@ jobs:
         sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /
       displayName: 'Install macOS SDK Headers'
     - script: |
-        make build_x64
+        make
       displayName: 'make'
     - script: |
         zip -r $(Build.SourcesDirectory)/doorstop_macos_$(Build.BuildId).zip *.dylib
