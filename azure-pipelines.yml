@@ -27,7 +27,7 @@ jobs:
       vmImage: 'macOS-10.14'
     steps:
     - script: |
-        open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
+        installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /
       displayName: 'Install macOS SDK Headers'
     - script: |
         make build_x64
