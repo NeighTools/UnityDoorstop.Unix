@@ -28,7 +28,7 @@ jobs:
     steps:
     - script: |
         make
-      displayName: 'make'
+      displayName: 'make build_x64' # x86 is not allowed on 10.14+ anymore
     - script: |
         zip -r $(Build.SourcesDirectory)/doorstop_macos_$(Build.BuildId).zip *.dylib
       displayName: 'Package files'
