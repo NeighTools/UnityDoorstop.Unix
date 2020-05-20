@@ -116,7 +116,7 @@ void *jit_init_hook(const char *root_domain_name, const char *runtime_version)
 
 	if (strcmp(getenv("DOORSTOP_ENABLE"), "TRUE"))
 	{
-		printf("[Doorstop] DOORSTO_ENABLE is not TRUE! Disabling Doorstop...\n");
+		printf("[Doorstop] DOORSTOP_ENABLE is not TRUE! Disabling Doorstop...\n");
 		return domain;
 	}
 	if (getenv("DOORSTOP_INITIALIZED"))
