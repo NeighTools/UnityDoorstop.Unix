@@ -15,6 +15,7 @@
 // rely on GNU for now (which we need anyway for LD_PRELOAD trick)
 extern char *program_invocation_name;
 void *(*real_dlsym)(void *, const char *) = NULL;
+int (*real_fclose)(FILE*) = NULL;
 
 // Some crazy hackery here to get LD_PRELOAD hackery work with dlsym hooking
 // Taken from https://stackoverflow.com/questions/15599026/how-can-i-intercept-dlsym-calls-using-ld-preload
@@ -22,15 +23,22 @@ extern void *_dl_sym(void *, const char *, void *);
 
 #define PATH_MAX 4096 // Maximum on Linux
 #define real_dlsym real_dlsym
+#define real_fclose real_fclose
 #define dlsym_proxy dlsym
+#define fclose_proxy fclose
 #define program_path(app_path) realpath(program_invocation_name, app_path)
 #define DYLD_INTERPOSE(_replacment, _replacee)
-#define INIT_DLSYM                                           \
-{                                                            \
-		if (real_dlsym == NULL)                              \
-			real_dlsym = _dl_sym(RTLD_NEXT, "dlsym", dlsym); \
-		if (!strcmp(name, "dlsym"))                          \
-			return (void *)dlsym_proxy;                      \
+#define INIT_DLSYM                                                 \
+{                                                                  \
+		if (real_dlsym == NULL)                                    \
+			real_dlsym = _dl_sym(RTLD_NEXT, "dlsym", dlsym_proxy); \
+		if (!strcmp(name, "dlsym"))                                \
+			return (void *)dlsym_proxy;                            \
+}
+#define INIT_FCLOSE                                                   \
+{                                                                     \
+		if (real_fclose == NULL)                                      \
+			real_fclose = _dl_sym(RTLD_NEXT, "fclose", fclose_proxy); \
 }
 
 #elif __APPLE__
@@ -38,7 +46,9 @@ extern void *_dl_sym(void *, const char *, void *);
 
 #define PATH_MAX 1024 // Maximum on macOS
 #define real_dlsym dlsym
+#define real_fclose fclose
 #define dlsym_proxy dlsym_proxy
+#define fclose_proxy fclose_proxy
 #define program_path(app_path)                    \
 	{                                             \
 		uint32_t bufsize = PATH_MAX;              \
@@ -220,6 +230,16 @@ void *jit_init_hook(const char *root_domain_name, const char *runtime_version)
 	return domain;
 }
 
+int fclose_proxy(FILE *stream) 
+{
+	INIT_FCLOSE;
+
+	// Some versions of Unity wrongly close stdout, which prevents writing to console
+	if (stream == stdout) 
+		return 0;
+	return real_fclose(stream);
+}
+
 void *dlsym_proxy(void *handle, const char *name)
 {
 	INIT_DLSYM;
@@ -234,3 +254,4 @@ void *dlsym_proxy(void *handle, const char *name)
 }
 
 DYLD_INTERPOSE(dlsym_proxy, real_dlsym);
+DYLD_INTERPOSE(fclose_proxy, real_fclose);
