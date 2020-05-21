@@ -62,6 +62,7 @@ extern void *_dl_sym(void *, const char *, void *);
 	} _interpose_##_replacee                   \
 		__attribute__((section("__DATA,__interpose"))) = {(const void *)(unsigned long)&_replacment, (const void *)(unsigned long)&_replacee};
 #define INIT_DLSYM
+#define INIT_FCLOSE
 #endif
 
 // Set MonoArray's index to a reference type value (i.e. string)
