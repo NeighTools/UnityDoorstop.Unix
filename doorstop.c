@@ -38,7 +38,7 @@ extern void *_dl_sym(void *, const char *, void *);
 #define INIT_FCLOSE                                                   \
 {                                                                     \
 		if (real_fclose == NULL)                                      \
-			real_fclose = _dl_sym(RTLD_NEXT, "fclose", fclose_proxy); \
+			real_fclose = dlsym(RTLD_NEXT, "fclose");                 \
 }
 
 #elif __APPLE__
