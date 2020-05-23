@@ -1,16 +1,17 @@
 CC=gcc
 CCFLAGS=-shared -fPIC
-FILES=doorstop.c
 
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S), Linux)
 	EXT = so
 	CCFLAGS += -D LINUX
+	FILES=doorstop.c
 endif
 ifeq ($(UNAME_S), Darwin)
 	EXT = dylib
 	CCFLAGS += -D OSX
+	FILES=doorstop.c plthook_osx.c
 endif
 
 build: build_x86 build_x64

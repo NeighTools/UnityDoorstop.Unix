@@ -15,10 +15,10 @@ gcc -shared -fPIC -o doorstop.so doorstop.c
 
 macOS:
 ```sh
-gcc -shared -fPIC -o doorstop.dylib doorstop.c
+gcc -shared -fPIC -o doorstop.dylib doorstop.c plthook_osx.c
 ```
 
-Or run `make` to generate both x86 and x64 builds.
+Or run either `make build_x64` or `make build_x86` depending on your architecture.
 
 ## How to use
 
