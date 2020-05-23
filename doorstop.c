@@ -35,10 +35,10 @@ extern void *_dl_sym(void *, const char *, void *);
 		if (!strcmp(name, "dlsym"))                                \
 			return (void *)dlsym_proxy;                            \
 }
-#define INIT_FCLOSE                                                   \
-{                                                                     \
-		if (real_fclose == NULL)                                      \
-			real_fclose = dlsym(RTLD_NEXT, "fclose");                 \
+#define INIT_FCLOSE                                                        \
+{                                                                          \
+		if (real_fclose == NULL)                                           \
+			real_fclose = real_dlsym(RTLD_NEXT, "fclose");                 \
 }
 
 #elif __APPLE__
@@ -231,16 +231,6 @@ void *jit_init_hook(const char *root_domain_name, const char *runtime_version)
 	return domain;
 }
 
-int fclose_proxy(FILE *stream) 
-{
-	INIT_FCLOSE;
-
-	// Some versions of Unity wrongly close stdout, which prevents writing to console
-	if (stream == stdout) 
-		return 0;
-	return real_fclose(stream);
-}
-
 void *dlsym_proxy(void *handle, const char *name)
 {
 	INIT_DLSYM;
@@ -252,6 +242,16 @@ void *dlsym_proxy(void *handle, const char *name)
 	}
 
 	return real_dlsym(handle, name);
+}
+
+int fclose_proxy(FILE *stream) 
+{
+	INIT_FCLOSE;
+
+	// Some versions of Unity wrongly close stdout, which prevents writing to console
+	if (stream == stdout) 
+		return 0;
+	return real_fclose(stream);
 }
 
 DYLD_INTERPOSE(dlsym_proxy, real_dlsym);
