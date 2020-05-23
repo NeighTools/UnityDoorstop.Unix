@@ -5,12 +5,14 @@
 # Running a game with Doorstop allows to execute arbitary .NET assemblies before Unity is initialized.
 #
 # Usage: Configure the script below and simply run this script when you want to run your game modded.
-# DO NOT EDIT THIS:
 
+doorstop_libname="doorstop.so"
 doorstop_dir=$PWD
 case "$(uname -s)" in
-    Linux*)  export LD_PRELOAD="$doorstop_dir/doorstop.so";;
-    Darwin*) export DYLD_INSERT_LIBRARIES="$doorstop_dir/doorstop.dyld";;
+    Linux*)  export LD_LIBRARY_PATH=${doorstop_dir}:${LD_LIBRARY_PATH};
+             export LD_PRELOAD=$doorstop_libname;;
+    Darwin*) export DYLD_LIBRARY_PATH=${doorstop_dir}:${DYLD_LIBRARY_PATH};
+             export DYLD_INSERT_LIBRARIES=$doorstop_libname;;
     *) echo "Invalid OS"; exit;;
 esac
 
