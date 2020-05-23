@@ -159,6 +159,10 @@ void *jit_init_hook(const char *root_domain_name, const char *runtime_version)
     setenv("DOORSTOP_MANAGED_FOLDER_DIR", assembly_dir, TRUE);
     free(assembly_dir);
 
+    char app_path[PATH_MAX] = "\0";
+    program_path(app_path);
+    setenv("DOORSTOP_PROCESS_PATH", app_path, TRUE);
+
     // Load our custom assembly into the domain
     void *assembly = r_mono_domain_assembly_open(domain, dll_path);
 
@@ -199,23 +203,10 @@ void *jit_init_hook(const char *root_domain_name, const char *runtime_version)
     uint32_t params = r_mono_signature_get_param_count(signature);
 
     void **args = NULL;
-    char app_path[PATH_MAX] = "\0";
     if (params == 1)
     {
         // If there is a parameter, it's most likely a string[].
-        // Populate it as follows
-        // 0 => path to the game's executable
-        // 1 => --doorstop-invoke
-
-        program_path(app_path);
-
-        void *exe_path = r_mono_string_new(domain, app_path);
-        void *doorstop_handle = r_mono_string_new(domain, "--doorstop-invoke");
-
         void *args_array = r_mono_array_new(domain, r_mono_get_string_class(), 2);
-
-        SET_ARRAY_REF(args_array, 0, exe_path);
-        SET_ARRAY_REF(args_array, 1, doorstop_handle);
 
         args = malloc(sizeof(void *) * 1);
         args[0] = args_array;
