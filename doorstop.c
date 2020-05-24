@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <libgen.h>
+#include "plthook.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -14,56 +15,19 @@
 #if __linux__
 // rely on GNU for now (which we need anyway for LD_PRELOAD trick)
 extern char *program_invocation_name;
-void *(*real_dlsym)(void *, const char *) = NULL;
-int (*real_fclose)(FILE*) = NULL;
-
-// Some crazy hackery here to get LD_PRELOAD hackery work with dlsym hooking
-// Taken from https://stackoverflow.com/questions/15599026/how-can-i-intercept-dlsym-calls-using-ld-preload
-extern void *_dl_sym(void *, const char *, void *);
 
 #define PATH_MAX 4096 // Maximum on Linux
-#define real_dlsym real_dlsym
-#define real_fclose real_fclose
-#define dlsym_proxy dlsym
-#define fclose_proxy fclose
 #define program_path(app_path) realpath(program_invocation_name, app_path)
-#define DYLD_INTERPOSE(_replacment, _replacee)
-#define INIT_DLSYM                                                 \
-{                                                                  \
-        if (real_dlsym == NULL)                                    \
-            real_dlsym = _dl_sym(RTLD_NEXT, "dlsym", dlsym_proxy); \
-        if (!strcmp(name, "dlsym"))                                \
-            return (void *)dlsym_proxy;                            \
-}
-#define INIT_FCLOSE                                                        \
-{                                                                          \
-        if (real_fclose == NULL)                                           \
-            real_fclose = real_dlsym(RTLD_NEXT, "fclose");                 \
-}
 
 #elif __APPLE__
 #include <mach-o/dyld.h>
-#include "plthook.h"
 
 #define PATH_MAX 1024 // Maximum on macOS
-#define real_dlsym dlsym
-#define real_fclose fclose
-#define dlsym_proxy dlsym_proxy
-#define fclose_proxy fclose_proxy
 #define program_path(app_path)                    \
     {                                             \
         uint32_t bufsize = PATH_MAX;              \
         _NSGetExecutablePath(app_path, &bufsize); \
     }
-#define DYLD_INTERPOSE(_replacment, _replacee) \
-    __attribute__((used)) static struct        \
-    {                                          \
-        const void *replacment;                \
-        const void *replacee;                  \
-    } _interpose_##_replacee                   \
-        __attribute__((section("__DATA,__interpose"))) = {(const void *)(unsigned long)&_replacment, (const void *)(unsigned long)&_replacee};
-#define INIT_DLSYM
-#define INIT_FCLOSE
 #endif
 
 void *(*r_mono_jit_init_version)(const char *root_domain_name, const char *runtime_version);
@@ -91,7 +55,7 @@ char *(*r_mono_assembly_getrootdir)();
 
 void doorstop_init_mono_functions(void *handle)
 {
-#define LOAD_METHOD(m) r_##m = real_dlsym(handle, #m)
+#define LOAD_METHOD(m) r_##m = dlsym(handle, #m)
 
     LOAD_METHOD(mono_jit_init_version);
     LOAD_METHOD(mono_domain_assembly_open);
@@ -216,64 +180,58 @@ void *jit_init_hook(const char *root_domain_name, const char *runtime_version)
     return domain;
 }
 
-void *dlsym_proxy(void *handle, const char *name)
-{
-    INIT_DLSYM;
-
+void *dlsym_hook(void *handle, const char *name) {
+    
     if (!strcmp(name, "mono_jit_init_version"))
     {
         doorstop_init_mono_functions(handle);
         return (void *)jit_init_hook;
     }
 
-    return real_dlsym(handle, name);
+    return dlsym(handle, name);
 }
 
-int fclose_proxy(FILE *stream) 
-{
-	INIT_FCLOSE;
-
-	// Some versions of Unity wrongly close stdout, which prevents writing to console
-	if (stream == stdout) 
-		return 0;
-	return real_fclose(stream);
+int fclose_hook(FILE *stream) {
+    // Some versions of Unity wrongly close stdout, which prevents writing to console
+    if (stream == stdout)
+        return F_OK;
+    return fclose(stream);
 }
 
+__attribute__ ((constructor)) void doorstop_setup() {
+    plthook_t *hook;
+
+    if(plthook_open(&hook, NULL) != 0) {
+        printf("Failed to open current process PLT! Cannot run Doorstop! Error: %s\n", plthook_error());
+        return;
+    }
+
+    if(plthook_replace(hook, "dlsym", &dlsym_hook, NULL) != 0)
+        printf("Failed to hook dlsym, ignoring it. Error: %s\n", plthook_error());
+    
+    if(plthook_replace(hook, "fclose", &fclose_hook, NULL) != 0)
+        printf("Failed to hook fclose, ignoring it. Error: %s\n", plthook_error());
+    
 #if __APPLE__
-// Normal case: hook dlsym and get both handle to mono and hook to jit_init_version
-DYLD_INTERPOSE(dlsym_proxy, real_dlsym);
-DYLD_INTERPOSE(fclose_proxy, real_fclose);
-
-/*
- On older Unity versions, Mono methods are resolved by the OS's loader directly.
- Because of this, there is no dlsym, in which case we need to apply a PLT hook.
-*/
-
-void *find_mono_image()
-{
+    /*
+        On older Unity versions, Mono methods are resolved by the OS's loader directly.
+        Because of this, there is no dlsym, in which case we need to apply a PLT hook.
+    */
+    void *mono_handle = NULL;
     uint32_t cnt = _dyld_image_count();
     for (uint32_t idx = 0; idx < cnt; idx++) 
     {
         const char *image_name = idx ? _dyld_get_image_name(idx) : NULL;
-        if (image_name && strstr(image_name, "libmono"))
-            return dlopen(image_name, RTLD_LAZY | RTLD_NOLOAD);
+        if (image_name && strstr(image_name, "libmono")) 
+        {
+            mono_handle = dlopen(image_name, RTLD_LAZY | RTLD_NOLOAD);
+            break;
+        }
     }
-    return NULL;
-}
 
-__attribute__((constructor)) void doorstop_main() 
-{
-    plthook_t *hook;
-
-    if(plthook_open(&hook, NULL) != 0)
-        printf("Failed to open current process PLT! err: %s\n", plthook_error());
-
-    if(plthook_replace(hook, "mono_jit_init_version", &jit_init_hook, NULL) == 0)
-    {
-        void *mono_handle = find_mono_image();
+    if(plthook_replace(hook, "mono_jit_init_version", &jit_init_hook, NULL) == 0 && mono_handle)
         doorstop_init_mono_functions(mono_handle);
-    }
-    
-    plthook_close(hook);
-} 
 #endif
+
+    plthook_close(hook);
+}

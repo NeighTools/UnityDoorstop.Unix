@@ -6,7 +6,7 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S), Linux)
 	EXT = so
 	CCFLAGS += -D LINUX
-	FILES=doorstop.c
+	FILES=doorstop.c plthook_elf.c
 endif
 ifeq ($(UNAME_S), Darwin)
 	EXT = dylib
