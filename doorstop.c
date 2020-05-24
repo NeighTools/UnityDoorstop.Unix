@@ -66,13 +66,6 @@ extern void *_dl_sym(void *, const char *, void *);
 #define INIT_FCLOSE
 #endif
 
-// Set MonoArray's index to a reference type value (i.e. string)
-#define SET_ARRAY_REF(arr, index, refVal)                                            \
-    {                                                                                \
-        void **p = (void **)r_mono_array_addr_with_size(arr, sizeof(void *), index); \
-        r_mono_gc_wbarrier_set_arrayref(arr, p, refVal);                             \
-    }
-
 void *(*r_mono_jit_init_version)(const char *root_domain_name, const char *runtime_version);
 void *(*r_mono_domain_assembly_open)(void *domain, const char *name);
 void *(*r_mono_assembly_get_image)(void *assembly);
