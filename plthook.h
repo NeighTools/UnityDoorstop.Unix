@@ -7,6 +7,7 @@
  * ------------------------------------------------------
  *
  * Copyright 2013-2014 Kubo Takehiro <kubo@jiubao.org>
+ *                2020 Geoffrey Horsington <neigh@coder.horse>
  *
  * Redistribution and use in source and binary forms, with or without modification, are
  * permitted provided that the following conditions are met:
@@ -58,6 +59,7 @@ int plthook_enum(plthook_t *plthook, unsigned int *pos, const char **name_out, v
 int plthook_replace(plthook_t *plthook, const char *funcname, void *funcaddr, void **oldfunc);
 void plthook_close(plthook_t *plthook);
 const char *plthook_error(void);
+void *plthook_handle_by_name(const char *name);
 
 #ifdef __cplusplus
 }; /* extern "C" */
