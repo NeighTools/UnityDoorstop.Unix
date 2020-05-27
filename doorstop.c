@@ -201,35 +201,32 @@ int fclose_hook(FILE *stream) {
 __attribute__ ((constructor)) void doorstop_setup() {
     plthook_t *hook;
 
-    if(plthook_open(&hook, NULL) != 0) {
+    // Some versions of Unity (especially macOS) ship with UnityPlayer shared lib
+    void *unity_player = plthook_handle_by_name("UnityPlayer");
+    if(unity_player && plthook_open_by_handle(&hook, unity_player) == 0) {
+        printf("Found UnityPlayer, hooking into it instead\n");
+    }
+    else if(plthook_open(&hook, NULL) != 0) {
         printf("Failed to open current process PLT! Cannot run Doorstop! Error: %s\n", plthook_error());
         return;
     }
 
     if(plthook_replace(hook, "dlsym", &dlsym_hook, NULL) != 0)
         printf("Failed to hook dlsym, ignoring it. Error: %s\n", plthook_error());
-    
+
     if(plthook_replace(hook, "fclose", &fclose_hook, NULL) != 0)
         printf("Failed to hook fclose, ignoring it. Error: %s\n", plthook_error());
-    
+
 #if __APPLE__
     /*
         On older Unity versions, Mono methods are resolved by the OS's loader directly.
         Because of this, there is no dlsym, in which case we need to apply a PLT hook.
     */
-    void *mono_handle = NULL;
-    uint32_t cnt = _dyld_image_count();
-    for (uint32_t idx = 0; idx < cnt; idx++) 
-    {
-        const char *image_name = idx ? _dyld_get_image_name(idx) : NULL;
-        if (image_name && strstr(image_name, "libmono")) 
-        {
-            mono_handle = dlopen(image_name, RTLD_LAZY | RTLD_NOLOAD);
-            break;
-        }
-    }
+    void *mono_handle = plthook_handle_by_name("libmono");
 
-    if(plthook_replace(hook, "mono_jit_init_version", &jit_init_hook, NULL) == 0 && mono_handle)
+    if(plthook_replace(hook, "mono_jit_init_version", &jit_init_hook, NULL) != 0)
+        printf("Failed to hook jit_init_version, ignoring it. Error: %s\n", plthook_error());
+    else if(mono_handle)
         doorstop_init_mono_functions(mono_handle);
 #endif
 
