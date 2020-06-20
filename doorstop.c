@@ -200,9 +200,17 @@ int fclose_hook(FILE *stream) {
 
 __attribute__ ((constructor)) void doorstop_setup() {
     plthook_t *hook;
-
+    
     // Some versions of Unity (especially macOS) ship with UnityPlayer shared lib
     void *unity_player = plthook_handle_by_name("UnityPlayer");
+
+#if __linux__
+    if(!unity_player) {
+        // In some newer Unity versions, UnityPlayer is a separate lib
+        unity_player = dlopen("UnityPlayer.so", RTLD_LAZY);
+    }
+#endif
+
     if(unity_player && plthook_open_by_handle(&hook, unity_player) == 0) {
         printf("Found UnityPlayer, hooking into it instead\n");
     }
