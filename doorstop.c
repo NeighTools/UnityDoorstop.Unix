@@ -52,6 +52,8 @@ void (*r_mono_thread_set_main)(void *thread);
 void (*r_mono_domain_set_config)(void *domain, char *base_dir, char *config_file_name);
 char *(*r_mono_assembly_getrootdir)();
 
+void (*r_mono_config_parse)(const char *filename);
+
 
 void doorstop_init_mono_functions(void *handle)
 {
@@ -74,12 +76,15 @@ void doorstop_init_mono_functions(void *handle)
     LOAD_METHOD(mono_thread_set_main);
     LOAD_METHOD(mono_domain_set_config);
     LOAD_METHOD(mono_assembly_getrootdir);
+    LOAD_METHOD(mono_config_parse);
 
 #undef LOAD_METHOD
 }
 
 void *jit_init_hook(const char *root_domain_name, const char *runtime_version)
 {
+    r_mono_config_parse(NULL);
+
     // Call the original r_mono_jit_init_version to initialize the Unity Root Domain
     void *domain = r_mono_jit_init_version(root_domain_name, runtime_version);
 
