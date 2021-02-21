@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <libgen.h>
+#include <unistd.h>
 #include "plthook.h"
 
 #define TRUE 1
@@ -53,6 +54,9 @@ void (*r_mono_domain_set_config)(void *domain, char *base_dir, char *config_file
 char *(*r_mono_assembly_getrootdir)();
 
 void (*r_mono_config_parse)(const char *filename);
+void (*r_mono_set_assemblies_path)(const char *path);
+
+void *(*r_mono_image_open_from_data_with_name)(void *data, uint32_t data_len, int need_copy, void *status, int refonly, const char *name);
 
 
 void doorstop_init_mono_functions(void *handle)
@@ -77,12 +81,35 @@ void doorstop_init_mono_functions(void *handle)
     LOAD_METHOD(mono_domain_set_config);
     LOAD_METHOD(mono_assembly_getrootdir);
     LOAD_METHOD(mono_config_parse);
+    LOAD_METHOD(mono_set_assemblies_path);
+    LOAD_METHOD(mono_image_open_from_data_with_name);
 
 #undef LOAD_METHOD
 }
 
 void *jit_init_hook(const char *root_domain_name, const char *runtime_version)
 {
+    char *override = getenv("DOORSTOP_CORLIB_OVERRIDE_PATH");
+    char *assembly_dir = r_mono_assembly_getrootdir();
+    if (override) {
+        printf("Got override: %s\n", override);
+        printf("Current root dir: %s\n", assembly_dir);
+        
+        char bcl_root_full[PATH_MAX] = "\0";
+        realpath(override, bcl_root_full);
+        printf("New root path: %s\n", bcl_root_full);
+
+        char *search_path;
+        asprintf(&search_path, "%s:%s", bcl_root_full, assembly_dir);
+        printf("Search path: %s\n", search_path);
+
+        r_mono_set_assemblies_path(search_path);
+        setenv("DOORSTOP_DLL_SEARCH_DIRS", search_path, 1);
+        free(search_path);
+    } else {
+        setenv("DOORSTOP_DLL_SEARCH_DIRS", assembly_dir, 1);
+    }
+
     r_mono_config_parse(NULL);
 
     // Call the original r_mono_jit_init_version to initialize the Unity Root Domain
@@ -116,7 +143,6 @@ void *jit_init_hook(const char *root_domain_name, const char *runtime_version)
 
     char *dll_path = getenv("DOORSTOP_INVOKE_DLL_PATH");
 
-    char *assembly_dir = r_mono_assembly_getrootdir();
     printf("Managed dir: %s\n", assembly_dir);
     setenv("DOORSTOP_MANAGED_FOLDER_DIR", assembly_dir, TRUE);
     free(assembly_dir);
@@ -185,12 +211,55 @@ void *jit_init_hook(const char *root_domain_name, const char *runtime_version)
     return domain;
 }
 
+void *hook_mono_image_open_from_data_with_name(void *data, uint32_t data_len, int need_copy, void *status, int refonly, char *name) {
+    printf("Load DLL: %s\n", name);
+    void *result = NULL;
+    char *override = getenv("DOORSTOP_CORLIB_OVERRIDE_PATH");
+    if (override) {
+        char override_full[PATH_MAX] = "\0";
+        realpath(override, override_full);
+
+        char *filename = basename(name);
+        printf("Base: %s\n", filename);
+
+        char *new_path;
+        asprintf(&new_path, "%s/%s", override_full, filename);
+
+        if (access(new_path, F_OK) == 0) {
+            printf("Redirecting to %s\n", new_path);
+            FILE *f = fopen(new_path, "rb");
+            fseek(f, 0, SEEK_END);
+            long size = ftell(f);
+            rewind(f);
+
+            char *buf = malloc(sizeof(char) * size);
+            fread(buf, size, 1, f);
+            fclose(f);
+            result = r_mono_image_open_from_data_with_name(buf, size, need_copy, status, refonly, name);
+        }
+        free(new_path);
+    }
+    if (!result) { result = r_mono_image_open_from_data_with_name(data, data_len, need_copy, status, refonly, name); }
+    return result;
+}
+
+static char inited = 0;
 void *dlsym_hook(void *handle, const char *name) {
     
     if (!strcmp(name, "mono_jit_init_version"))
     {
-        doorstop_init_mono_functions(handle);
+        if (!inited) {
+            doorstop_init_mono_functions(handle);
+            inited = 1;
+        }
         return (void *)jit_init_hook;
+    }
+    if (!strcmp(name, "mono_image_open_from_data_with_name")) {
+        if (!inited) {
+            doorstop_init_mono_functions(handle);
+            inited = 1;
+        }
+        return (void *)hook_mono_image_open_from_data_with_name;
     }
 
     return dlsym(handle, name);
