@@ -24,5 +24,8 @@ export DOORSTOP_ENABLE=TRUE;
 # What .NET assembly to execute. Valid value is a path to a .NET DLL that mono can execute.
 export DOORSTOP_INVOKE_DLL_PATH=$doorstop_dir/Doorstop.dll;
 
+# If enabled, this will prioritize assembly resolving from the given directory
+# export DOORSTOP_CORLIB_OVERRIDE_PATH=""
+
 # Specify the name of the game's executable here!
 ./LinuxTest.x86_64
