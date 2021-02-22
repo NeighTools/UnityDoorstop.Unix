@@ -115,11 +115,6 @@ void *jit_init_hook(const char *root_domain_name, const char *runtime_version)
     // Call the original r_mono_jit_init_version to initialize the Unity Root Domain
     void *domain = r_mono_jit_init_version(root_domain_name, runtime_version);
 
-    if (strcmp(getenv("DOORSTOP_ENABLE"), "TRUE"))
-    {
-        printf("[Doorstop] DOORSTOP_ENABLE is not TRUE! Disabling Doorstop...\n");
-        return domain;
-    }
     if (getenv("DOORSTOP_INITIALIZED"))
     {
         printf("DOORSTOP_INITIALIZED is set! Skipping!\n");
@@ -273,6 +268,12 @@ int fclose_hook(FILE *stream) {
 }
 
 __attribute__ ((constructor)) void doorstop_setup() {
+    if (strcmp(getenv("DOORSTOP_ENABLE"), "TRUE"))
+    {
+        printf("[Doorstop] DOORSTOP_ENABLE is not TRUE! Disabling Doorstop...\n");
+        return;
+    }
+
     plthook_t *hook;
     
     // Some versions of Unity (especially macOS) ship with UnityPlayer shared lib
