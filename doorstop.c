@@ -91,7 +91,7 @@ void doorstop_init_mono_functions(void *handle)
 void *jit_init_hook(const char *root_domain_name, const char *runtime_version)
 {
     char *override = getenv("DOORSTOP_CORLIB_OVERRIDE_PATH");
-    DIR *override_dir = dirent(override);
+    DIR *override_dir = opendir(override);
     char *assembly_dir = r_mono_assembly_getrootdir();
     if (override && override_dir) {
         closedir(override_dir);
@@ -110,7 +110,7 @@ void *jit_init_hook(const char *root_domain_name, const char *runtime_version)
         setenv("DOORSTOP_DLL_SEARCH_DIRS", search_path, 1);
         free(search_path);
     } else {
-        prtinf("No override (or failed to find), unsetting.");
+        printf("No override (or failed to find), unsetting.\n");
         unsetenv("DOORSTOP_CORLIB_OVERRIDE_PATH");
         setenv("DOORSTOP_DLL_SEARCH_DIRS", assembly_dir, 1);
     }
