@@ -394,7 +394,7 @@ __attribute__ ((constructor)) void doorstop_setup() {
     void *mono_handle = plthook_handle_by_name("libmono");
 
     if(plthook_replace(hook, "mono_jit_init_version", &jit_init_hook, NULL) != 0)
-        LOGF("Failed to hook jit_init_version, ignoring it. Error: %s\n", plthook_error());
+        printf("Failed to hook jit_init_version, ignoring it. Error: %s\n", plthook_error());
     else if(mono_handle)
         doorstop_init_mono_functions(mono_handle);
 #endif
