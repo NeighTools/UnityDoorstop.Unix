@@ -95,8 +95,8 @@ void doorstop_init_mono_functions(void *handle)
 
 #define LOG(message)                        \
     {                                       \
-        fprintf(stderr, "[Doorstop] ");     \
-        fprintf(stderr, message);           \
+        fprintf(stdout, "[Doorstop] ");     \
+        fprintf(stdout, message);           \
                                             \
         fprintf(log_handle, "[Doorstop] "); \
         fprintf(log_handle, message);       \
@@ -110,8 +110,8 @@ void doorstop_init_mono_functions(void *handle)
         fprintf(log_handle, "[Doorstop] ");        \
         fprintf(log_handle, message, __VA_ARGS__); \
                                                    \
-        fprintf(stderr, "[Doorstop] ");            \
-        fprintf(stderr, message, __VA_ARGS__);     \
+        fprintf(stdout, "[Doorstop] ");            \
+        fprintf(stdout, message, __VA_ARGS__);     \
                                                    \
         fflush(log_handle);                        \
         fflush(stdout);                            \
